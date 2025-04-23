@@ -1,80 +1,67 @@
-function generarMatrices(){
-    let filasA = document.getElementById("filas").value;
-    let columnasA = document.getElementById("columnas").value;
-    let matricesDiv = document.getElementById("matrices");
-    matricesDiv.innerHTML = '';
+let matriz1, matriz2;
 
-    if (filasA <= 0 || columnasA <= 0){
+async function generarMatrices() {
+    let filasA = parseInt(document.getElementById("filas").value);
+    let columnasA = parseInt(document.getElementById("columnas").value);
+
+    if (filasA <= 0 || columnasA <= 0) {
         alert("Ingrese valores válidos para filas y columnas");
         return;
     }
 
     let filasB = columnasA;
     let columnasB = filasA;
-    
-    for (let i = 1; i <= 2; i++){
-        let filas = i === 1 ? filasA : filasB;
-        let columnas = i === 1 ? columnasA : columnasB;
 
-        let matrizDiv = document.createElement("div");
-        matrizDiv.className = "matriz";
-        matrizDiv.style.display = "grid";
-        matrizDiv.style.gridTemplateColumns=`repeat(${columnas},auto)`;
+    let matricesDiv = document.getElementById("matrices");
+    matricesDiv.innerHTML = '';
 
-        for (let f = 0; f < filas; f++){
-            for(let c = 0; c < columnas; c++){
+    matriz1 = tf.randomUniform([filasA, columnasA], 1, 21, 'int32');
+    matriz2 = tf.randomUniform([columnasA, columnasB], 1, 21, 'int32');
+
+    const datos1 = await matriz1.array();
+    const datos2 = await matriz2.array();
+
+    const crearMatrizHTML = (datos, clase) => {
+        let div = document.createElement('div');
+        div.className = "matriz";
+        div.style.display = "grid";
+        div.style.gridTemplateColumns = `repeat(${datos[0].length}, auto)`;
+        datos.forEach(fila => {
+            fila.forEach(valor => {
                 let input = document.createElement('input');
-                input.type='number';
-                input.className=`matriz${i}`;
-                matrizDiv.appendChild(input);
-            }
-        }
-        matricesDiv.appendChild(matrizDiv);
-    }
+                input.type = 'number';
+                input.disabled = true;
+                input.className = clase;
+                input.value = valor;
+                div.appendChild(input);
+            });
+        });
+        return div;
+    };
+
+    matricesDiv.appendChild(crearMatrizHTML(datos1, 'matriz1'));
+    matricesDiv.appendChild(crearMatrizHTML(datos2, 'matriz2'));
 }
 
-function multiplicarMatrices(){
-    let matrizAInput = Array.from(document.querySelectorAll('.matriz1')).map(input => Number(input.value));
-    let matrizBInput = Array.from(document.querySelectorAll('.matriz2')).map(input => Number(input.value));
-
-    let filasA = parseInt(document.getElementById("filas").value);
-    let columnasA = parseInt(document.getElementById("columnas").value);
-    let filasB = columnasA;
-    let columnasB = filasA;
-
-    if (matrizAInput.some(isNaN) || matrizBInput.some(isNaN)){
-        alert("Ingrese solo valores númericos");
+function multiplicarMatrices() {
+    if (!matriz1 || !matriz2) {
+        alert("Genera las matrices primero.");
         return;
     }
 
-    let matrizA = [];
-    let matrizB = [];
-    for (let i = 0; i < filasA; i++) {
-        matrizA.push(matrizAInput.slice(i * columnasA, (i+1) * columnasA));
-    }
-    for (let i = 0; i < filasB; i++) {
-        matrizB.push(matrizBInput.slice(i * columnasB, (i + 1) * columnasB));
-    }
-
-    let matrizC = Array(filasA).fill().map(() => Array(columnasB).fill(0));
-    
-    for (let i = 0; i < filasA; i++){
-        for (let j = 0; j < columnasB; j++) {
-            for (let k = 0; k < columnasA; k++){
-                matrizC[i][j] += matrizA[i][k] * matrizB[k][j];
-            }
-        }
-    }
-
+    let resultado = tf.matMul(matriz1, matriz2);
     let resultadoDiv = document.getElementById('resultado');
     resultadoDiv.innerHTML = '';
     resultadoDiv.style.display = "grid";
-    resultadoDiv.style.gridTemplateColumns = `repeat(${columnasB}, auto)`;
+    resultadoDiv.style.gridTemplateColumns = `repeat(${matriz2.shape[1]}, auto)`;
 
-    matrizC.flat().forEach(valor =>{
-        let cell = document.createElement('div');
-        cell.textContent = valor;
-        cell.className = ('div-matriz');
-        resultadoDiv.appendChild(cell);
+    resultado.array().then(data => {
+        data.forEach(fila => {
+            fila.forEach(valor => {
+                let cell = document.createElement('div');
+                cell.textContent = valor;
+                resultadoDiv.appendChild(cell);
+            });
+        });
     });
 }
